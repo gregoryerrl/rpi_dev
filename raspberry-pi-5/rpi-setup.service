@@ -1,12 +1,12 @@
 [Unit]
-Description=Raspberry Pi Wi-Fi setup page and fallback hotspot
-Wants=NetworkManager.service
+Description=Raspberry Pi SSH fallback hotspot
+Wants=NetworkManager.service ssh.service
 After=NetworkManager.service
 
 [Service]
 User=rpi-setup
 Group=rpi-setup
-ExecStart=/usr/bin/python3 -B /usr/local/lib/rpi-setup/server.py
+ExecStart=/usr/bin/python3 -B /usr/local/lib/rpi-setup/hotspot.py
 Restart=always
 RestartSec=5
 NoNewPrivileges=yes

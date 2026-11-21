@@ -1,54 +1,31 @@
-# Raspberry Pi 5 Wi-Fi setup
+# Portable SSH access on Raspberry Pi 5
 
-A local HTTPS page for a Raspberry Pi 5 Model B running Debian Trixie or Raspberry Pi OS Trixie, with NetworkManager managing the built-in Wi-Fi interface, `wlan0`. The page runs from systemd at boot. It uses the system Python, python-dbus, and NetworkManager.
+On a known Wi-Fi network, SSH to the Pi at its LAN address. If NetworkManager has no active Wi-Fi or Ethernet connection for about a minute, the Pi creates an **open** hotspot named `Pi-Setup-<hostname>`. Join it and SSH to `10.42.0.1` with the Pi's normal SSH credentials. Wi-Fi association requires no password. Nearby clients can reach any service bound to that interface.
 
-## Install on a Pi
+## Install or upgrade
 
-From the checkout, run these commands in a terminal on the Pi. Already provisioned Wi-Fi profiles, including the home network, are preserved.
+On a Pi with NetworkManager managing `wlan0`, run:
 
 ```sh
 cd ~/rpi_dev/raspberry-pi-5
 sudo ./install.sh
 ```
 
-The installer prints the URLs, device-specific hotspot password, admin password, and TLS certificate fingerprint. Keep those somewhere accessible before leaving home. If installing on a minimal image, the required Debian packages are `network-manager python3-dbus dnsmasq-base openssl avahi-daemon polkitd`. NetworkManager must already manage the radio. Set the wireless country in the Pi's system settings if Wi-Fi is blocked on a fresh image.
+The installer enables OpenSSH and the fallback monitor at boot. Upgrades replace the configuration web service and convert its saved hotspot to open Wi-Fi. If the old protected hotspot is active during the update, the change applies the next time the hotspot starts. If your laptop remembers the old password, forget the saved hotspot and join again. Package prerequisites on Debian Trixie are `network-manager`, `dnsmasq-base`, `openssh-server`, `python3-dbus` and `polkitd`.
 
-## Open the page
+## Move between networks
 
-- **On a LAN** — Join the same Wi-Fi or Ethernet LAN as the Pi and open `https://<hostname>.local:8443/`. If your device cannot resolve local names, use the Pi's IPv4 address from the router or `hostname -I`. Guest network client isolation can block device-to-device access.
-- **Away from a LAN** — Give the Pi about a minute to try its saved networks. Join the printed `Pi-Setup-…` network, choose to stay connected if your phone reports no internet, then open `https://10.42.0.1:8443/`.
-- **First visit** — The Pi generates its own TLS certificate. Compare the browser's SHA-256 certificate fingerprint with the installer output before accepting it. Sign in as `admin` with the printed page password. A new address may prompt for sign-in again.
+1. On the hotspot, connect with `ssh <pi-user>@10.42.0.1`.
+2. Run `nmcli -f NAME,TYPE connection show` to see saved profiles. To return home, run `sudo pi-wifi-return 'netplan-wlan0-archer_2.4G'`, substituting your saved home profile on other Pis. The switch runs as a system job and finishes after the hotspot SSH connection drops.
+3. Join the home network on your laptop and start a new SSH connection to the Pi's LAN IP or its mDNS hostname if available. On the original Pi this is `ssh stryka@192.168.0.117`; DHCP may assign another address later. If the switch fails and the Pi stays offline, the hotspot returns after about a minute.
 
-Enter the name and password of a WPA/WPA2 personal network, then select **Save and connect**. The Pi's one radio switches networks, which briefly disconnects a hotspot client. Join the new LAN and open the hostname URL again. The Pi saves the profile after successful activation. If the join fails, it tries to restore the previous connection and falls back to its setup hotspot if offline.
+To add another Wi-Fi profile over SSH, use NetworkManager's `nmtui` connection editor to save its settings, then give its profile name to `pi-wifi-return`. At boot, NetworkManager tries saved Wi-Fi first. The fallback hotspot remains available until you request a handoff or Ethernet connects.
 
-The hotspot stays available while you use it. When returning home, **Retry saved Wi-Fi** releases the radio to NetworkManager for about a minute. Rebooting also gives saved networks the first opportunity. Plugging into a connected Ethernet LAN turns the fallback hotspot off. LAN access works without an internet connection.
-
-## Open the page over SSH
-
-If a laptop browser cannot reach the local network or trust the Pi's certificate, use SSH to forward a laptop-only address to the existing setup page. Run this on the laptop, replacing the login, address and home directory with the Pi's values:
+## Check status
 
 ```sh
-ssh -t -o ExitOnForwardFailure=yes -L 127.0.0.1:8088:/home/stryka/.cache/rpi-setup/browser.sock stryka@192.168.0.117 '~/rpi_dev/raspberry-pi-5/browser-tunnel'
+nmcli device status
+ip -br -4 address
+systemctl status rpi-setup ssh
+journalctl -u rpi-wifi-return -b
 ```
-
-Once the tunnel prints its address, open `http://127.0.0.1:8088/` on the laptop and use the normal page login. SSH encrypts traffic to the Pi. The helper verifies the existing HTTPS service against its installed public certificate. It may prompt for the Pi user's sudo password to read that certificate. Closing the SSH session closes the tunnel. The same command works on the hotspot with the Pi address replaced by `10.42.0.1`.
-
-## Operations
-
-```sh
-systemctl status rpi-setup
-journalctl -u rpi-setup -b
-sudo cat /etc/rpi-setup/config.json
-sudo openssl x509 -in /etc/rpi-setup/cert.pem -noout -sha256 -fingerprint
-```
-
-The JSON file contains both device passwords. Keep it private. The service runs as the dedicated `rpi-setup` account. Its polkit rule permits NetworkManager profile changes, connection activation, and a protected hotspot. Per-device credentials, certificates, and network profiles stay on the Pi, outside the Git checkout. Re-run the installer after pulling updates. It retains existing credentials and restarts the service.
-
-To stop serving the page at boot, run `sudo systemctl disable --now rpi-setup`. An already active hotspot can be stopped separately with `sudo nmcli connection down "Pi setup hotspot"` from the Pi's console.
-
-## Field check
-
-1. Install while connected to home Wi-Fi. From a second device on the same LAN, sign in and check the reported address.
-2. With Ethernet unplugged, power the Pi up out of range of saved networks. Join its hotspot and load the page.
-3. Try a wrong Wi-Fi password. After the join attempt times out, reconnect to the hotspot.
-4. Submit a valid Wi-Fi network and reconnect your client to that LAN. Reboot the Pi and confirm the page returns on the saved network.
