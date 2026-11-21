@@ -1,0 +1,20 @@
+[Unit]
+Description=Raspberry Pi Wi-Fi setup page and fallback hotspot
+Wants=NetworkManager.service
+After=NetworkManager.service
+
+[Service]
+User=rpi-setup
+Group=rpi-setup
+ExecStart=/usr/bin/python3 -B /usr/local/lib/rpi-setup/server.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

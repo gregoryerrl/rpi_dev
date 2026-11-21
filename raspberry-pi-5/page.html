@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wi-Fi setup · $hostname</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7f4;color:#182e26;font:1rem/1.5 "DejaVu Sans",sans-serif}
+main{max-width:34rem;margin:6vh auto;padding:1.5rem}h1{font-size:2.1rem;margin:0}h2{font-size:1.2rem;margin:0 0 1rem}
+header p{margin:.25rem 0 1.5rem}section{background:white;border:1px solid #c7d3cc;border-radius:.7rem;padding:1.35rem;margin:1rem 0}
+label{display:block;font-weight:600}input,button{font:inherit;border-radius:.35rem;padding:.6rem .8rem}
+input{width:100%;border:1px solid #80948b;margin:.3rem 0 1rem}button{background:#16563f;border:1px solid #16563f;color:white;cursor:pointer}
+.secondary{background:white;color:#16563f}p:empty{display:none}.notice{border-left:3px solid #a66527;padding-left:.8rem}
+</style>
+<main>
+<header><h1>Wi-Fi setup</h1><p>$hostname · $status</p><p>$details</p></header>
+<p class="notice" role="status">$message</p>
+<section><h2>Join a network</h2>
+<form method="post" action="/join">
+<input type="hidden" name="token" value="$token">
+<label for="ssid">Wi-Fi name</label><input id="ssid" name="ssid" required maxlength="32" autocapitalize="none" spellcheck="false">
+<label for="password">Wi-Fi password</label><input id="password" type="password" name="password" required minlength="8" maxlength="64" autocomplete="off">
+<button>Save and connect</button>
+</form></section>
+<section><h2>Setup hotspot</h2>
+<p>When offline, the Pi broadcasts <strong>$hotspot</strong>. Join it and open <strong>https://10.42.0.1:8443</strong>.</p>
+<p>To leave the hotspot and try a previously saved network, select the button below.</p>
+<form method="post" action="/retry"><input type="hidden" name="token" value="$token"><button class="secondary">Retry saved Wi-Fi</button></form>
+</section></main></html>
