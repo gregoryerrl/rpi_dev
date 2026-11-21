@@ -24,6 +24,7 @@ systemctl enable --now ssh.service
 /usr/bin/python3 -B "$app/provision.py"
 install -m 644 60-rpi-setup.rules /etc/polkit-1/rules.d/
 install -m 644 rpi-setup.service /etc/systemd/system/
+install -D -m 755 90-rpi-setup /etc/NetworkManager/dispatcher.d/90-rpi-setup
 systemctl daemon-reload
 systemctl enable rpi-setup.service
 systemctl restart rpi-setup.service

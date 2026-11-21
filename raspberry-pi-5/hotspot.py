@@ -1,6 +1,5 @@
 """Keep a fallback hotspot available when the Pi has no active LAN."""
 import json
-import logging
 import os
 from pathlib import Path
 import subprocess
@@ -16,7 +15,7 @@ def nm(*args, timeout=12):
                           env={**os.environ, "LC_ALL": "C"}).stdout.strip()
 
 
-def check(hotspot, last_online):
+def connections(hotspot):
     rows = nm("-t", "--escape", "no", "-f", "DEVICE,TYPE,STATE,CON-UUID",
               "device", "status").splitlines()
     active = [row.split(":", 3) for row in rows]
@@ -28,27 +27,20 @@ def check(hotspot, last_online):
                 ap = True
             else:
                 lan = True
-    now = time.monotonic()
+    return lan, ap
+
+
+def reconcile(hotspot):
+    lan, ap = connections(hotspot)
+    if not (lan or ap):
+        # Give saved profiles a chance to connect, then reread the live state.
+        time.sleep(GRACE)
+        lan, ap = connections(hotspot)
     if lan and ap:
         nm("connection", "down", "uuid", hotspot)
-    if lan or ap:
-        return now
-    if now - last_online >= GRACE:
+    elif not (lan or ap):
         nm("-w", "30", "connection", "up", "uuid", hotspot, "ifname", "wlan0", timeout=35)
-        return now
-    return last_online
-
-
-def main():
-    hotspot = json.loads(CONFIG.read_text())["hotspot_uuid"]
-    last_online = time.monotonic()
-    while True:
-        try:
-            last_online = check(hotspot, last_online)
-        except (subprocess.SubprocessError, OSError) as exc:
-            logging.warning("NetworkManager check failed: %s", getattr(exc, "stderr", None) or exc)
-        time.sleep(5)
 
 
 if __name__ == "__main__":
-    main()
+    reconcile(json.loads(CONFIG.read_text())["hotspot_uuid"])

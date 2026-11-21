@@ -21,6 +21,8 @@ The installer enables OpenSSH and the fallback monitor at boot. Upgrades replace
 
 To add another Wi-Fi profile over SSH, use NetworkManager's `nmtui` connection editor to save its settings, then give its profile name to `pi-wifi-return`. At boot, NetworkManager tries saved Wi-Fi first. The fallback hotspot remains available until you request a handoff or Ethernet connects.
 
+NetworkManager wakes the fallback service when a connection goes up or down. On a stable LAN, systemd normally reports `active (exited)`; the next link change runs the check again.
+
 ## Check status
 
 ```sh

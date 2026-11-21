@@ -1,0 +1,5 @@
+#!/bin/sh
+# Queue the check outside the dispatcher so NetworkManager can finish the handoff.
+case "$2" in
+    up|down) exec /usr/bin/systemctl --no-block try-restart rpi-setup.service ;;
+esac

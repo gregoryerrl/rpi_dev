@@ -2,12 +2,15 @@
 Description=Raspberry Pi SSH fallback hotspot
 Wants=NetworkManager.service ssh.service
 After=NetworkManager.service
+PartOf=NetworkManager.service
 
 [Service]
+Type=exec
+RemainAfterExit=yes
 User=rpi-setup
 Group=rpi-setup
 ExecStart=/usr/bin/python3 -B /usr/local/lib/rpi-setup/hotspot.py
-Restart=always
+Restart=on-failure
 RestartSec=5
 NoNewPrivileges=yes
 PrivateTmp=yes
