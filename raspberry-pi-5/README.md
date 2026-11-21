@@ -7,7 +7,9 @@ On a known Wi-Fi network, SSH to the Pi at its LAN address. If NetworkManager ha
 On a Pi with NetworkManager managing `wlan0`, run:
 
 ```sh
-cd ~/rpi_dev/raspberry-pi-5
+# From the root of your cloned repository
+sudo apt install network-manager dnsmasq-base openssh-server python3-dbus polkitd
+cd raspberry-pi-5
 sudo ./install.sh
 ```
 
@@ -16,8 +18,8 @@ The installer enables OpenSSH and the fallback monitor at boot. Upgrades replace
 ## Move between networks
 
 1. On the hotspot, connect with `ssh <pi-user>@10.42.0.1`.
-2. Run `nmcli -f NAME,TYPE connection show` to see saved profiles. To return home, run `sudo pi-wifi-return 'netplan-wlan0-archer_2.4G'`, substituting your saved home profile on other Pis. The switch runs as a system job and finishes after the hotspot SSH connection drops.
-3. Join the home network on your laptop and start a new SSH connection to the Pi's LAN IP or its mDNS hostname if available. On the original Pi this is `ssh stryka@192.168.0.117`; DHCP may assign another address later. If the switch fails and the Pi stays offline, the hotspot returns after about a minute.
+2. Run `nmcli -f NAME,TYPE connection show` to see saved profiles. To return home, run `sudo pi-wifi-return 'YOUR SAVED PROFILE'`, substituting your saved home profile on other Pis. The switch runs as a system job and finishes after the hotspot SSH connection drops.
+3. Join the home network on your laptop and start a new SSH connection to the Pi's LAN IP or its mDNS hostname if available. Use `ssh <pi-user>@<pi-hostname>.local` if mDNS is available, or look up the current address on your router. If the switch fails and the Pi stays offline, the hotspot returns after about a minute.
 
 To add another Wi-Fi profile over SSH, use NetworkManager's `nmtui` connection editor to save its settings, then give its profile name to `pi-wifi-return`. At boot, NetworkManager tries saved Wi-Fi first. The fallback hotspot remains available until you request a handoff or Ethernet connects.
 
@@ -31,3 +33,9 @@ ip -br -4 address
 systemctl status rpi-setup ssh
 journalctl -u rpi-wifi-return -b
 ```
+
+## Verify a deployment
+
+Run `/usr/bin/python3 -m unittest -v` from this directory. On the Pi, check `systemctl is-enabled ssh rpi-setup`, then open a second SSH connection to the LAN address. Verify the hotspot and the return to a saved profile once per new hardware setup, with a local console or Ethernet available if recovery is needed. The model profile assumes the built-in Wi-Fi interface is named `wlan0`.
+
+Re-running the installer updates the service and preserves the device's hotspot UUID and saved networks. To disable fallback while keeping SSH, run `sudo systemctl disable --now rpi-setup.service`. If already on the hotspot, return to the LAN before taking it down.
