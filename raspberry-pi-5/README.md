@@ -23,6 +23,16 @@ Enter the name and password of a WPA/WPA2 personal network, then select **Save a
 
 The hotspot stays available while you use it. When returning home, **Retry saved Wi-Fi** releases the radio to NetworkManager for about a minute. Rebooting also gives saved networks the first opportunity. Plugging into a connected Ethernet LAN turns the fallback hotspot off. LAN access works without an internet connection.
 
+## Open the page over SSH
+
+If a laptop browser cannot reach the local network or trust the Pi's certificate, use SSH to forward a laptop-only address to the existing setup page. Run this on the laptop, replacing the login, address and home directory with the Pi's values:
+
+```sh
+ssh -t -o ExitOnForwardFailure=yes -L 127.0.0.1:8088:/home/stryka/.cache/rpi-setup/browser.sock stryka@192.168.0.117 '~/rpi_dev/raspberry-pi-5/browser-tunnel'
+```
+
+Once the tunnel prints its address, open `http://127.0.0.1:8088/` on the laptop and use the normal page login. SSH encrypts traffic to the Pi. The helper verifies the existing HTTPS service against its installed public certificate. It may prompt for the Pi user's sudo password to read that certificate. Closing the SSH session closes the tunnel. The same command works on the hotspot with the Pi address replaced by `10.42.0.1`.
+
 ## Operations
 
 ```sh
