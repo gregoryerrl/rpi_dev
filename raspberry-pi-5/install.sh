@@ -22,6 +22,7 @@ app=/usr/local/lib/rpi-setup
 install -d -m 755 "$app"
 install -d -m 750 -g rpi-setup /etc/rpi-setup
 install -m 644 hotspot.py provision.py "$app/"
+install -D -m 755 wifi_menu.py /usr/local/bin/pi-wifi
 install -m 755 pi-wifi-return /usr/local/sbin/
 systemctl enable --now ssh.service
 /usr/bin/python3 -B "$app/provision.py"
@@ -41,4 +42,5 @@ systemctl restart rpi-setup.service
 systemctl is-active --quiet rpi-setup.service
 systemctl is-active --quiet ssh.service
 echo "SSH fallback hotspot installed. Hotspot SSH address: 10.42.0.1"
+echo "Run pi-wifi over SSH to choose a network."
 echo "If upgrading on the hotspot, its new security setting takes effect at the next activation."

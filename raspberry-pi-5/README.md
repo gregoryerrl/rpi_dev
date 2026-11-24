@@ -17,11 +17,13 @@ The installer enables OpenSSH and the fallback monitor at boot. Upgrades replace
 
 ## Move between networks
 
-1. On the hotspot, connect with `ssh <pi-user>@10.42.0.1`.
-2. Run `nmcli -f NAME,TYPE connection show` to see saved profiles. To return home, run `sudo pi-wifi-return 'YOUR SAVED PROFILE'`, substituting your saved home profile on other Pis. The switch runs as a system job and finishes after the hotspot SSH connection drops.
-3. Join the home network on your laptop and start a new SSH connection to the Pi's LAN IP or its mDNS hostname if available. Use `ssh <pi-user>@<pi-hostname>.local` if mDNS is available, or look up the current address on your router. If the switch fails and the Pi stays offline, the hotspot returns after about a minute.
+1. Join `Pi-Setup-<hostname>` on your laptop and SSH to `<pi-user>@10.42.0.1`.
+2. Run `pi-wifi`. Choose a network by number or press **a** to enter an SSID, including a hidden one. Browsing the list is read-only. When you confirm a switch the menu uses `sudo`. For a new personal network it also prompts privately for the Wi-Fi password.
+3. Join the selected network on your laptop and reconnect with `ssh <pi-user>@<pi-hostname>.local`, or use the Pi's new IP from the router. A system job completes the switch after SSH disconnects. If the join fails, it tries to restore the previous connection. On the fallback hotspot, reconnect at `10.42.0.1`.
 
-To add another Wi-Fi profile over SSH, use NetworkManager's `nmtui` connection editor to save its settings, then give its profile name to `pi-wifi-return`. At boot, NetworkManager tries saved Wi-Fi first. The fallback hotspot remains available until you request a handoff or Ethernet connects.
+Press **r** to refresh nearby networks. If the Pi’s single radio needs to pause the hotspot, the menu asks first. After the hotspot returns, reconnect over SSH and run `pi-wifi` again. Results from that scan are available for five minutes. You can also run `pi-wifi --list` for a quick look without prompting or scanning.
+
+Saved profiles can include enterprise Wi-Fi. To add an enterprise profile, configure it with `sudo nmtui-edit`, then select it in `pi-wifi`. New personal networks are saved for future boots after the first successful join. For scripts, `pi-wifi --profile 'YOUR SAVED PROFILE'` and the existing `sudo pi-wifi-return 'YOUR SAVED PROFILE'` select a saved connection by its NetworkManager profile name.
 
 NetworkManager wakes the fallback service when a connection goes up or down. On a stable LAN, systemd normally reports `active (exited)`; the next link change runs the check again.
 

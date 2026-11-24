@@ -1,37 +1,11 @@
-#!/bin/bash
-set -euo pipefail
-if (( $# != 1 )); then
+#!/bin/sh
+set -eu
+if [ "$#" -ne 1 ]; then
     echo 'Usage: sudo pi-wifi-return "saved Wi-Fi connection name"' >&2
     exit 2
 fi
-uuid=$(nmcli -g connection.uuid connection show id "$1")
-mode=$(nmcli -g 802-11-wireless.mode connection show uuid "$uuid")
-if [[ "$mode" != infrastructure && "$mode" != "" ]]; then
-    echo "Choose a saved Wi-Fi client profile." >&2
-    exit 1
+sibling=$(dirname -- "$0")/wifi_menu.py
+if [ -f "$sibling" ]; then
+    exec /usr/bin/python3 -I "$sibling" --profile "$1"
 fi
-if [[ $(nmcli -g connection.type connection show uuid "$uuid") != 802-11-wireless ]]; then
-    echo "Choose a saved Wi-Fi client profile." >&2
-    exit 1
-fi
-if [[ $(nmcli -g GENERAL.CON-UUID device show wlan0) == "$uuid" ]]; then
-    echo "Already connected to $1."
-    exit 0
-fi
-if (( EUID != 0 )); then
-    echo "Run with sudo to schedule the handoff." >&2
-    exit 1
-fi
-# The system manager owns the job, so losing the hotspot SSH session cannot stop it.
-exec systemd-run --collect --unit=rpi-wifi-return /bin/bash -eu -c '
-    target=$1
-    current=$(nmcli -g GENERAL.CON-UUID device show wlan0)
-    if [[ -n "$current" && "$current" != "--" ]]; then
-        mode=$(nmcli -g 802-11-wireless.mode connection show uuid "$current")
-        if [[ "$mode" == ap ]]; then
-            nmcli -w 10 connection down uuid "$current"
-        fi
-    fi
-    nmcli -w 10 -g SSID device wifi list ifname wlan0 --rescan yes >/dev/null || true
-    nmcli -w 40 connection up uuid "$target" ifname wlan0
-' pi-wifi-return "$uuid"
+exec /usr/local/bin/pi-wifi --profile "$1"
